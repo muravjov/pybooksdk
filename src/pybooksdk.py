@@ -106,10 +106,13 @@ def setup_supervisor_daemon(name, template):
         notify_supervisor_restart()
     
 
-def restart_supervisor():
+def restart_supervisor(sleep=None):
     with mapping:
         append("name", "restart supervisor")
-        append("service", "name=supervisor state=restarted")
+        cmd = ["name=supervisor state=restarted"]
+        if sleep:
+            cmd.append("sleep=%(sleep)s" % locals())
+        append("service", " ".join(cmd))
 
 
 def unarchive_if_not_exists(title, dst_dir, src, user):
