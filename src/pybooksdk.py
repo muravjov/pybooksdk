@@ -41,6 +41,20 @@ def make_base_tasks():
         # - ввести числа 138, 349 через пробел (это есть en_US.utf8, ru_RU.utf8)
         # - выбрать локаль по умолчанию, одну из этих (пропишется в /etc/default/locale)
         append("when", "ansible_distribution_release != 'wheezy'")
+        
+    with when("ansible_distribution_release == 'wheezy'"):
+        with mapping:
+            append("lineinfile", """dest=/etc/locale.gen line='en_US.UTF-8 UTF-8' """)
+
+        # пока у меня есть в LC_* и LANG обе локали, их нужно иметь и на целевой машине,
+        # иначе часть прог ломается (less ломается всегда, python-проги - из-за LANG)
+        with mapping:
+            append("lineinfile", """dest=/etc/locale.gen line='ru_RU.UTF-8 UTF-8' """)
+            
+        with mapping:
+            append("name",    "regen added locales")
+            append("command", "locale-gen")
+            append("changed_when", False)
 
 # лучше, чтоб в cmd и cwd не было никаких кавычек
 def run_host_cmd(title, cmd, cwd, condition):
