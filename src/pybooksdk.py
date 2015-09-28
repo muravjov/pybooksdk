@@ -100,6 +100,11 @@ def setup_supervisor_daemon(name, template):
         "supervisor",
     ])
     
+    # если C-локаль, запускаемые (Python3-)проги не читают текстовые файлы как Unicode-ные, и т.д.
+    # :TRICKY: работает и без export, но только если переменная LANG уже в окружении => поэтому export
+    with mapping:
+        append("lineinfile", """dest=/etc/default/supervisor regexp="LANG.*=" line="export LANG=en_US.utf8" """)
+    
     # supervisor
     with mapping:
         append("template", "src=%(template)s dest=/etc/supervisor/conf.d/%(name)s.conf" % locals())
