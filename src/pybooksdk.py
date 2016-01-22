@@ -75,15 +75,38 @@ def install_mysql_server():
     
 import contextlib
 @contextlib.contextmanager
-def db_not_exists(dbname):
+def work_not_done(title, cmd, obj_name, var_suffix, condition):
+    var_name = obj_name.replace("-", "_")
+    var_name = "%(var_name)s_%(var_suffix)s" % locals()
+    
     with mapping:
-        append("name",    "check %(dbname)s db existance" % locals())
-        append("command", """mysql -sNe "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME='%(dbname)s'" """ % locals())
-        append("register", "%(dbname)s_existance_out" % locals())
+        append("name",    title)
+        append("command", cmd)
+        append("register", var_name)
         append("changed_when", False)
+        append("failed_when", False)
         
-    with when("""%(dbname)s_existance_out.stdout.find('%(dbname)s') == -1""" % locals()):
+    with when("""%(var_name)s.%(condition)s""" % locals()):
         yield None
+
+
+def db_not_exists(dbname):
+    return work_not_done(
+        "check %(dbname)s db existance" % locals(), 
+        """mysql -sNe "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME='%(dbname)s'" """ % locals(),
+        dbname, 
+        "existance_out", 
+        "stdout.find('%(dbname)s') == -1" % locals()
+    )
+
+def package_not_installed(pkg_name):
+    return work_not_done(
+        "check if %(pkg_name)s is installed" % locals(), 
+        """dpkg-query -l %(pkg_name)s""" % locals(),
+        pkg_name, 
+        "apt_installed", 
+        "rc != 0"
+    )
 
 #
 # supervisor
