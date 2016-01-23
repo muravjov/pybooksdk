@@ -137,11 +137,23 @@ def setup_supervisor_daemon(name, template):
 def restart_supervisor(sleep=None):
     with mapping:
         append("name", "restart supervisor")
-        cmd = ["name=supervisor state=restarted"]
-        if sleep:
-            cmd.append("sleep=%(sleep)s" % locals())
-        append("service", " ".join(cmd))
-
+        if sleep is None:
+            # Ошибка "restart supervisor" => failed
+            # на 3х сервисах (сферических, в вакууме):
+            # (эмпирически) 2 секунд не хватает всегда
+            # 3-х - на тестовых всегда хватает
+            #pybooksdk.restart_supervisor(3)
+            
+            # kill -HUP - самый адекватный способ перезагружать supervisor,
+            # потому что только он знает, сколько времени можно разрешать 
+            # работать своим процессам
+            # Аналогично, "supervisorctl shutdown", kill -TERM pid - самый адекватные способы
+            # прекращать работу supervisor-а (второе делает системный скрипт с помощью start-stop-daemon,
+            # а вот перезагрузку не умеет)
+            append("shell", "kill -HUP `supervisorctl pid`")
+        else:
+            # устаревший режим, если вдруг kill -HUP ошибку будет выдавать или еще чего
+            append("service", "name=supervisor state=restarted sleep=%(sleep)s" % locals())
 
 def unarchive_if_not_exists(title, dst_dir, src, user):
     reg_name = "stat_%s" % id(dst_dir)
