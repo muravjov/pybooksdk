@@ -72,8 +72,8 @@ def install_mysql_server():
         "python-mysqldb", # для модулей Ansible
     ])
     
-    
 import contextlib
+
 @contextlib.contextmanager
 def work_not_done(title, cmd, obj_name, var_suffix, condition):
     var_name = obj_name.replace("-", "_")
@@ -155,14 +155,19 @@ def restart_supervisor(sleep=None):
             # устаревший режим, если вдруг kill -HUP ошибку будет выдавать или еще чего
             append("service", "name=supervisor state=restarted sleep=%(sleep)s" % locals())
 
-def unarchive_if_not_exists(title, dst_dir, src, user):
-    reg_name = "stat_%s" % id(dst_dir)
+@contextlib.contextmanager
+def if_not_exists(title, dst_path):
+    reg_name = "stat_%s" % id(dst_path)
     with mapping:
         append("name",    "check %(title)s exists" % locals())
-        append("stat", """path=%(dst_dir)s""" % locals())
+        append("stat", """path=%(dst_path)s""" % locals())
         append("register", reg_name)
     
     with when("""not %(reg_name)s.stat.exists""" % locals()):
+        yield None
+
+def unarchive_if_not_exists(title, dst_dir, src, user):
+    with if_not_exists(title, dst_dir):
         # :TRICKY: не всегда у пользователя есть одноименная группа
         # кроме тогда, group=root заведомо неплохой выбор в плане безопасности
         # 
