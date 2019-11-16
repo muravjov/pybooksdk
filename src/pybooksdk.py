@@ -14,10 +14,14 @@ def install_packages(name, lst):
 
     with mapping:
         append("name", name)
-        append("apt",  "pkg={{ item }} state=present")
-        with sequence("with_items"):
-            for item in lst:
-                append(item)
+        #append("apt",  "pkg={{ item }} state=present")
+        #with sequence("with_items"):
+            #for item in lst:
+                #append(item)
+        with mapping("apt"):
+            with sequence("pkg"):
+                for item in lst:
+                    append(item)
 
 def make_base_tasks():
     install_packages("install common admin tools", [
